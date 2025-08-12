@@ -60,12 +60,7 @@ builder.Host.UseSerilog();
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<ValidateUserFilter>();
 
-
-builder.Services.AddDatabase(builder.Configuration);
-builder.Services.AddRepositoryUOW();
-builder.Services.AddServices();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
