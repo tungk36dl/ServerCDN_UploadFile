@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  blogapi:
+    build:
+      context: .
+      dockerfile: Blog.API/Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_URLS=http://+:5000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 5s
+      retries: 5
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http blogapi:5000 --log=stdout
+    environment:
+      - NGROK_AUTHTOKEN=2v2lqCaFPL57VoEMVBhS5Yxo1NI_4KTyjCxWCqATUDSwHYV1Y
+    depends_on:
+      blogapi:
+        condition: service_healthy
