@@ -21,77 +21,81 @@ namespace Blog.API.Controllers
             var file = request.File;
 
             if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
+                return StatusCode(400, ApiResponse<string>.Fail("No file uploaded.", 400));
 
-            var relativePath = UploadFileHelper.UploadFile(file);
-            if (string.IsNullOrEmpty(relativePath))
-                return StatusCode(400, "Upload failed.");
-
-            return Ok(new { path = relativePath });
+            var uploadResult = UploadFileHelper.UploadFile(file);
+            return StatusCode(uploadResult.StatusCode, uploadResult);
         }
 
         [HttpGet("download")]
         public IActionResult DownloadFile([FromQuery] string path)
         {
             if (string.IsNullOrWhiteSpace(path))
-                return BadRequest("Path is required.");
+                return StatusCode(400, ApiResponse<string>.Fail("Path is required.", 400));
 
-            try
+            var result = UploadFileHelper.GetDownloadData(path);
+            if (!result.Success || result.Data == null)
             {
-                var data = UploadFileHelper.GetDownloadData(path);
-                return File(data.FileBytes, "application/octet-stream", data.FileName);
+                return StatusCode(result.StatusCode, result);
             }
-            catch
+
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(result.Data.FileName, out var contentType))
             {
-                return NotFound("File not found.");
+                contentType = "application/octet-stream";
             }
+
+            return File(result.Data.FileBytes, contentType, result.Data.FileName);
         }
 
         [HttpDelete("delete")]
         public IActionResult DeleteFile([FromQuery] string path)
         {
             if (string.IsNullOrWhiteSpace(path))
-                return BadRequest("Path is required.");
+                return StatusCode(400, ApiResponse<string>.Fail("Path is required.", 400));
 
-            UploadFileHelper.RemoveFile(path);
-            return Ok("File deleted (if it existed).");
+            var result = UploadFileHelper.RemoveFile(path);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("view")]
         public IActionResult ViewFile([FromQuery] string path)
         {
             if (string.IsNullOrWhiteSpace(path))
-                return BadRequest("Path is required.");
+                return StatusCode(400, ApiResponse<string>.Fail("Path is required.", 400));
 
             try
             {
-                // Lấy đường dẫn vật lý
-                var physicalPath = UploadFileHelper.GetPhysicalPath(path);
+                var physicalPathResponse = UploadFileHelper.GetPhysicalPath(path);
+                if (!physicalPathResponse.Success || string.IsNullOrWhiteSpace(physicalPathResponse.Data))
+                {
+                    return StatusCode(physicalPathResponse.StatusCode, physicalPathResponse);
+                }
+
+                var physicalPath = physicalPathResponse.Data;
 
                 if (!System.IO.File.Exists(physicalPath))
-                    return NotFound("File not found.");
+                    return NotFound(ApiResponse<string>.Fail("File not found.", 404));
 
-                // Xác định Content-Type tự động
                 var provider = new FileExtensionContentTypeProvider();
                 if (!provider.TryGetContentType(physicalPath, out var contentType))
                 {
                     contentType = "application/octet-stream";
                 }
 
-                // Trả về file với disposition inline (hiển thị trực tiếp)
                 var fileStream = System.IO.File.OpenRead(physicalPath);
                 return new FileStreamResult(fileStream, contentType)
                 {
-                    EnableRangeProcessing = true // Hỗ trợ partial content cho video/audio
+                    EnableRangeProcessing = true
                 };
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(400, ApiResponse<string>.Fail(ex.Message, 400));
             }
             catch
             {
-                return StatusCode(500, "Error retrieving file");
+                return StatusCode(500, ApiResponse<string>.Fail("Error retrieving file", 500));
             }
         }
 
@@ -103,6 +107,6 @@ namespace Blog.API.Controllers
     public class UploadFileRequest
     {
         [Required]
-        public IFormFile File { get; set; }
+        public required IFormFile File { get; set; }
     }
 }

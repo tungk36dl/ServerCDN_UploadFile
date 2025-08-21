@@ -14,13 +14,13 @@ namespace Blog.Infrastructure.Common
         private const string DEFAULT_UPLOAD_FOLDER = "";
 
 
-        public static string UploadFile(IFormFile file, string folderName = "")
+        public static ApiResponse<string> UploadFile(IFormFile file, string folderName = "")
         {
             try
             {
                 if (file == null || file.Length == 0)
                 {
-                    return "";
+                    return ApiResponse<string>.Fail("Not found file");
                 }
                 if (string.IsNullOrEmpty(folderName)) folderName = DEFAULT_UPLOAD_FOLDER;
                 var directoryPath = Path.Combine(BASE_PATH, folderName);
@@ -36,16 +36,16 @@ namespace Blog.Infrastructure.Common
                     file.CopyTo(stream);
                 }
                 var relativePath = filePath.Replace(BASE_PATH, "").Replace("\\", "/");
-                return relativePath;
+                return  ApiResponse<string>.Ok(relativePath);
             }
-            catch
+            catch(Exception ex)
             {
-                return "";
+                return  ApiResponse<string>.Fail($"Error: {ex}"); 
             }
         }
 
 
-        public static void RemoveFile(string path)
+        public static ApiResponse<Boolean> RemoveFile(string path)
         {
             string filePath = path.Insert(0, BASE_PATH).Replace("/", "\\");
             if (File.Exists(filePath))
@@ -53,19 +53,20 @@ namespace Blog.Infrastructure.Common
                 try
                 {
                     File.Delete(filePath);
+                    return ApiResponse<Boolean>.Ok(true);
                 }
-                catch
+                catch(Exception ex)
                 {
-                    return;
+                    return ApiResponse<Boolean>.Fail($"Error: {ex}");
                 }
             }
             else
             {
-                return;
+                return ApiResponse<Boolean>.Fail($"Filepath not exist"); 
             }
         }
 
-        public static DownloadData GetDownloadData(string path)
+        public static ApiResponse<DownloadData> GetDownloadData(string path)
         {
             string filePath1 = path.Insert(0, BASE_PATH).Replace("/", "\\");
 
@@ -84,16 +85,16 @@ namespace Blog.Infrastructure.Common
                     FileName = Path.GetFileName(filePath),
                     FileBytes = File.ReadAllBytes(filePath)
                 };
-                return downloadData;
+                return ApiResponse<DownloadData>.Ok(downloadData);
             }
             catch (Exception ex)
             {
-                throw ex;
+                return ApiResponse<DownloadData>.Fail($"Error: {ex}");
             }
 
         }
 
-        public static string GetPhysicalPath(string relativePath)
+        public static ApiResponse<string> GetPhysicalPath(string relativePath)
         {
             relativePath = relativePath.TrimStart('/', '\\');
             var fullPath = Path.Combine(BASE_PATH, relativePath.Replace('/', Path.DirectorySeparatorChar));
@@ -104,17 +105,17 @@ namespace Blog.Infrastructure.Common
 
             if (!fullPath.StartsWith(basePath))
             {
-                throw new InvalidOperationException("Invalid file path");
+                return ApiResponse<string>.Fail("Invalid file path");
             }
 
-            return fullPath;
+            return ApiResponse<string>.Ok(fullPath);
         }
     }
 
     public class DownloadData
     {
-        public string FileName { get; set; }
-        public byte[] FileBytes { get; set; }
+        public required string FileName { get; set; }
+        public required byte[] FileBytes { get; set; }
     }
 
 }

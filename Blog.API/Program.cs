@@ -10,27 +10,27 @@ var builder = WebApplication.CreateBuilder(args);
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 // 2️⃣ Đăng ký AUTHENTICATION
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
+//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//    .AddJwtBearer(options =>
+//    {
+//        options.TokenValidationParameters = new TokenValidationParameters
+//        {
+//            ValidateIssuer = true,
+//            ValidateAudience = true,
+//            ValidateLifetime = true,
+//            ValidateIssuerSigningKey = true,
 
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                                Encoding.UTF8.GetBytes(jwtSettings["Key"]!)),
-            ClockSkew = TimeSpan.Zero              // Không “nới” 5 phút mặc định
-        };
-    });
+//            ValidIssuer = jwtSettings["Issuer"],
+//            ValidAudience = jwtSettings["Audience"],
+//            IssuerSigningKey = new SymmetricSecurityKey(
+//                                Encoding.UTF8.GetBytes(jwtSettings["Key"]!)),
+//            ClockSkew = TimeSpan.Zero              // Không “nới” 5 phút mặc định
+//        };
+//    });
 
 
 // 3️⃣ Đăng ký AUTHORIZATION (policy, role … nếu cần)
-builder.Services.AddAuthorization();
+//builder.Services.AddAuthorization();
 
 // cho phép yêu cầu từ frontend
 builder.Services.AddCors(options =>
